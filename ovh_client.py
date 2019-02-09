@@ -4,6 +4,7 @@ import sys
 import dns.resolver
 import dns.exception
 import socket
+from time import sleep
 from tabulate import tabulate
 from functions import *
 from config import *
@@ -113,14 +114,42 @@ class OVHQuerier:
 			print("[*] Domain's records - %d record(s)" % (len(records)))
 			self.display_records(data)
 
+	# Check whether the record was deployed or not
+	def check_record_deployment(self, domain, sub, token, nameservers={}):
+		resolver = dns.resolver.Resolver()
+		resolver.timeout = 3
+		resolver.lifetime = 5
+
+		# Add nameservers
+		if len(nameservers) > 0:
+			for n in nameservers:
+				resolver.nameservers.append(socket.gethostbyname(n))
+		# Try to fetch value and compare it with token
+		try:
+			txt_records = resolver.query("%s.%s." % (sub, domain), "TXT")
+			for t in txt_records:
+				if token in t.to_text():
+					print("[+] Found correct token value: \"%s\"" % token)
+					return True
+		except dns.resolver.NXDOMAIN as e:
+			print("[!] Error: %s" % e)
+		return False
+
+# Quick test to ensure this "client" works (OVH credentials and zone creation)
 if __name__ == "__main__":
 	if len(sys.argv) != 2:
 		print("Usage: %s domain" % (sys.argv[0]))
 		exiting("[!] Please provide a domain name", 1)
 
-	my_ovh = OVHQuerier(True) # True => verbosity
-	my_ovh.api_domain_info(sys.argv[1])
+	my_ovh = OVHQuerier(False) # True => verbosity
+	info = my_ovh.api_domain_info(sys.argv[1])
 	my_ovh.display_all_domain_records(sys.argv[1])
 	record_id = my_ovh.api_create_TXT_record(sys.argv[1], "_testing-value", "TESTING VALUE")
 	my_ovh.display_all_domain_records(sys.argv[1])
+	while True:
+		if my_ovh.check_record_deployment(sys.argv[1], "_testing-value", "TESTING VALUE", info["nameServers"] if "nameServers" in info else {}):
+			break
+		else:
+			print("[!] Record not deployed yet, waiting 10 seconds...")
+			sleep(10)
 	my_ovh.api_delete_TXT_record(sys.argv[1], record_id)
