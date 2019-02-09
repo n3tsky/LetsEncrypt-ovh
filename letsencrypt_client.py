@@ -105,7 +105,7 @@ class LetsEncryptCORE():
 
     # 4.1 - Handle challenge validation - DNS (return token value)
     def api_handle_DNS(self, challenge, domain_name):
-        print("[*] Step 4.1 - Handle Let'sEncrypt challenge")
+        print("[*] Step 4.1 - Handle Let'sEncrypt challenge (DNS)")
         token = try_and_load_JSON(challenge, "token")
         keyauth = "%s.%s" % (token, self.thumbprint)
         dns_TXT_value = c_b64(sha256(keyauth.encode("utf-8")).digest())
@@ -138,21 +138,28 @@ class LetsEncryptCORE():
     # Fifth step - Finalize and sign order
     def api_finalizing(self, URL_finalize):
         print("[*] Step 5 - Signing and finalizing order")
-        payload = {"csr" : c_b64(self.der)}
-        j_finalize = self.do_loop(URL_finalize, payload, "status", "valid")
-        expiration_date = try_and_load_JSON(j_finalize, "expires")
-        print("[+] Certificate is valid, expiration date is: %s" % (expiration_date))
-        return j_finalize
+        if URL_finalize != None:
+            payload = {"csr" : c_b64(self.der)}
+            j_finalize = self.do_loop(URL_finalize, payload, "status", "valid")
+            expiration_date = try_and_load_JSON(j_finalize, "expires")
+            print("[+] Certificate is valid, expiration date is: %s" % (expiration_date))
+            return j_finalize
+        else:
+            exiting("[!] Invalid URL while finalizing order")
 
     # Final step - Download certificate and write to self.path_write_cert
     def api_dl_certificate(self, URL_dl, path_write_cert):
         print("[*] Step 6 - Downloading certificate...")
-        r = HTTP_request(URL_dl)
-        if "-----BEGIN CERTIFICATE-----" in r.text:
-        	print("%s..." % r.text[:300])
-        	write_file(path_write_cert, r.text)
+        if URL_dl != None:
+            r = HTTP_request(URL_dl)
+            if "-----BEGIN CERTIFICATE-----" in r.text:
+                print("%s..." % r.text[:150])
+                write_file(path_write_cert, r.text)
+                print("[+] Certificate was correctly downloaded")
+            else:
+            	print("[!] Invalid certificate")
         else:
-        	print("[!] Invalid certificate")
+            exiting("[!] Invalid URL while downloading the certificate")
 
     # Perform query until "value" (in key) is found
     def do_loop(self, URL, payload, key, value):

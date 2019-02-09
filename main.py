@@ -17,7 +17,7 @@ def do(args):
         print("***** Using staging environment *****")
         API_BASE_ADDRESS = LE_STAGING_API_ADDRESS
 
-    print("- Path: %s/%s" % (args.cert_path, args.cert_name))
+    print("[*] Output cert. file: %s/%s" % (args.cert_path, args.cert_name))
     check_path_and_name(args.cert_path, args.cert_name)
 
     print("[*] Loading account key...")
@@ -38,8 +38,8 @@ def do(args):
     j_order = leCORE.api_create_order()
     leCORE.api_authorization(j_order)
     j_finalize = leCORE.api_finalizing(try_and_load_JSON(j_order, "finalize"))
-    #print(try_and_load_JSON(j_finalize, "certificate"))
-    #leCORE.api_dl_certificate(try_and_load_JSON(j_finalize, "certificate"), args.out_cert)
+    leCORE.api_dl_certificate(try_and_load_JSON(j_finalize, "certificate"), "%s/%s" % (args.cert_path, args.cert_name))
+    exiting("[+] That's all folks!", 0)
 
 # Parse arguments
 def parser():
