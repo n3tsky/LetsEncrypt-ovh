@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from argparse import ArgumentParser
 import sys
-from letsencrypt import *
+from letsencrypt_client import *
 from config import *
 
 # Main work starts here
