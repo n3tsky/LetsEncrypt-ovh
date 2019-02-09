@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Prod env.
 LE_API_ADDRESS = "https://acme-v02.api.letsencrypt.org/directory"
