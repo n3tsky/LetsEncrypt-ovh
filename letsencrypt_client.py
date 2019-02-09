@@ -101,7 +101,7 @@ class LetsEncryptCORE():
                     token = self.api_handle_DNS(challenge, v_domain)
                     # Wait for challenge to be validated by Let's Encrypt
                     self.do_loop(try_and_load_JSON(challenge, "url"), {}, "status", "valid")
-                    #self.api_finalizing(try_and_load_JSON(j_order, "finalize"))
+                    self.my_ovh.remove_challenge_DNS_records(v_domain, "_acme-challenge") # Remove all challenge(s)
 
     # 4.1 - Handle challenge validation - DNS (return token value)
     def api_handle_DNS(self, challenge, domain_name):

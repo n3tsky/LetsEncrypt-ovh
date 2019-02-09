@@ -135,13 +135,24 @@ class OVHQuerier:
 			print("[!] Error: %s" % e)
 		return False
 
+	# Remove all DNS records used to validate Let's Encrypt challenge(s)
+	def remove_challenge_DNS_records(self, domain, sub):
+		print("[*] Removing DNS records used for Let'sEncrypt challenge")
+		filter = { "fieldType": "TXT", "subDomain": sub }
+		records = self.api_fetch_domain_records(domain, filter)
+		results = self.iterate_over_domain_records(domain, records)
+		for r in results:
+			if set(["TXT", sub]).issubset(r): # Even though we've used a filter
+				self.api_delete_TXT_record(domain, r[0]) # r[0] is record ID
+		self.api_refresh_zone(domain)
+
 # Quick test to ensure this "client" works (OVH credentials and zone creation)
 if __name__ == "__main__":
 	if len(sys.argv) != 2:
 		print("Usage: %s domain" % (sys.argv[0]))
 		exiting("[!] Please provide a domain name", 1)
 
-	my_ovh = OVHQuerier(False) # True => verbosity
+	my_ovh = OVHQuerier(True) # True => verbosity
 	info = my_ovh.api_domain_info(sys.argv[1])
 	my_ovh.display_all_domain_records(sys.argv[1])
 	record_id = my_ovh.api_create_TXT_record(sys.argv[1], "_testing-value", "TESTING VALUE")
@@ -153,3 +164,4 @@ if __name__ == "__main__":
 			print("[!] Record not deployed yet, waiting 10 seconds...")
 			sleep(10)
 	my_ovh.api_delete_TXT_record(sys.argv[1], record_id)
+	#my_ovh.remove_challenge_DNS_records(sys.argv[1], "_testing-value")
