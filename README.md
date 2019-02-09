@@ -2,8 +2,9 @@
 
 Python script used to generate Let'sEncrypt certificate (without CERTBOT) through DNS challenge verification
 
-
 ### Features
+* Python3 (full pythonic instructions)
+* All-in-one script (no need to update DNS zones manually)
 
 ### Installation
 * Install Python3 dependencies
@@ -41,8 +42,10 @@ optional arguments:
   -v, --verbose                       Verbose output
 ```
 
-
-### Thanks
-
+### Thanks/Credits
+* https://github.com/diafygi/acme-tiny
+* https://github.com/rbeuque74/letsencrypt-ovh-hook
 
 ### ToDo
+* Handle contact information
+* Handle HTTP verification method
