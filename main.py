@@ -12,8 +12,9 @@ def do(args):
 
     API_BASE_ADDRESS = LE_API_ADDRESS
     if (args.staging): # Do we use the staging (testing) environment?
-        print("[!] **** Using staging environment ****")
+        print("***** Using staging environment *****")
         API_BASE_ADDRESS = LE_STAGING_API_ADDRESS
+
 
     print("[*] Loading account key...")
     prv_key = load_key_from_file(args.account_key)
@@ -21,18 +22,20 @@ def do(args):
     print("[*] Loading CSR - Certificate Signing Request...")
     pem = load_CSR_from_file(args.csr)
     domains = get_domains_from_CSR(pem)
-    #conv_PEMCSR_to_DER(pem)
+    der = conv_PEMCSR_to_DER(pem)
     print("[*] Done!")
     print("[*] Creating required authentication elements...")
     jwk, thumbprint = create_required_auth(prv_key)
     print("[*] Done!")
 
-    leCORE = LetsEncryptCORE(API_BASE_ADDRESS, prv_key, jwk, domains, thumbprint)
+    leCORE = LetsEncryptCORE(API_BASE_ADDRESS, prv_key, der, jwk, domains, thumbprint, args.verbose)
     leCORE.api_init()
     leCORE.api_create_account()
     j_order = leCORE.api_create_order()
     leCORE.api_authorization(j_order)
-    #leCORE.api_dl_certificate(args.out_cert)
+    j_finalize = leCORE.api_finalizing(try_and_load_JSON(j_order, "finalize"))
+    #print(try_and_load_JSON(j_finalize, "certificate"))
+    #leCORE.api_dl_certificate(try_and_load_JSON(j_finalize, "certificate"), args.out_cert)
 
 # Parse arguments
 def parser():

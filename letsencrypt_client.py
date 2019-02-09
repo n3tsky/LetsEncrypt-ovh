@@ -8,13 +8,14 @@ from OpenSSL.crypto import FILETYPE_PEM, FILETYPE_ASN1
 from time import sleep
 import sys
 import json
-#from ovh_dns_client import *
+from ovh_client import *
 from functions import *
 
 # Class used to communicate with Let'sEncrypt API
 class LetsEncryptCORE():
-    jwk = ""
     prv_key = ""
+    jwk = ""
+    der = ""
     domains = ""
     thumbprint = ""
     kid = ""
@@ -22,14 +23,18 @@ class LetsEncryptCORE():
     URL_newNonce = ""
     URL_newAccount = ""
     URL_newOrder = ""
+    verbose = False
+    my_ovh = None
 
     # Constructor
-    def __init__(self, url_directory, prv_key, jwk, domains, thumbprint):
+    def __init__(self, url_directory, prv_key, der, jwk, domains, thumbprint, verbose):
         self.URL_directory = url_directory
         self.jwk = jwk
+        self.der = der
         self.prv_key = prv_key
         self.domains = domains
         self.thumbprint = thumbprint
+        self.verbose = verbose
 
     # Sign data (required to communicate with Let's Encrypt API)
     def sign_data(self, url, payload):
@@ -92,29 +97,74 @@ class LetsEncryptCORE():
                     exiting("[!] Unfortunately the HTTP method is not yet supported", 1)
                 elif method == "dns":
                     challenge = [c for c in j_auth["challenges"] if c["type"] == "dns-01"][0]
-                    self.api_handle_DNS(challenge, v_domain)
+                    self.my_ovh = OVHQuerier(self.verbose)
+                    token = self.api_handle_DNS(challenge, v_domain)
+                    # Wait for challenge to be validated by Let's Encrypt
+                    self.do_loop(try_and_load_JSON(challenge, "url"), {}, "status", "valid")
+                    #self.api_finalizing(try_and_load_JSON(j_order, "finalize"))
 
-    # Fifth step - Handle challenge validation - DNS
-    def api_handle_DNS(self, challenge, v_domain):
+    # 4.1 - Handle challenge validation - DNS (return token value)
+    def api_handle_DNS(self, challenge, domain_name):
+        print("[*] Step 4.1 - Handle Let'sEncrypt challenge")
         token = try_and_load_JSON(challenge, "token")
         keyauth = "%s.%s" % (token, self.thumbprint)
         dns_TXT_value = c_b64(sha256(keyauth.encode("utf-8")).digest())
-        dns_TXT_sub = "_acme-challenge.%s." % (v_domain)
+        dns_TXT_sub = "_acme-challenge.%s." % (domain_name)
         print("[*] Update DNS record: %s TXT %s" % (dns_TXT_value, dns_TXT_sub))
+        # OVH part
+        info = self.my_ovh.api_domain_info(domain_name)
+        self.my_ovh.display_all_domain_records(domain_name)
+        new_record = self.my_ovh.api_create_TXT_record(domain_name, "_acme-challenge", dns_TXT_value)
+        self.my_ovh.display_all_domain_records(domain_name)
+
+        inc = 0 # Counter
+        while True: # Check for DNS deployment
+            if self.my_ovh.check_record_deployment(domain_name, "_acme-challenge", dns_TXT_value,
+                info["nameServers"] if "nameServers" in info else {}):
+                break
+            elif inc == MAX_CHECK_DEPLOYMENT:
+                self.my_ovh.api_delete_TXT_record(domain_name, new_record)
+                exiting("[!] Record (challenge) was not deployed on time", 1)
+            else:
+                print("[!] Record not deployed yet, waiting 10 seconds...")
+                sleep(10)
+            inc+=1
+        return dns_TXT_value
 
     # Fifth step - Handle challenge validation - HTTP
     def api_handle_HTTP(self):
         pass
 
+    # Fifth step - Finalize and sign order
+    def api_finalizing(self, URL_finalize):
+        print("[*] Step 5 - Signing and finalizing order")
+        payload = {"csr" : c_b64(self.der)}
+        j_finalize = self.do_loop(URL_finalize, payload, "status", "valid")
+        expiration_date = try_and_load_JSON(j_finalize, "expires")
+        print("[+] Certificate is valid, expiration date is: %s" % (expiration_date))
+        return j_finalize
+
     # Final step - Download certificate and write to self.path_write_cert
-    def api_dl_certificate(self, path_write_cert):
-        print("[*] Downloading certificate...")
+    def api_dl_certificate(self, URL_dl, path_write_cert):
+        print("[*] Step 6 - Downloading certificate...")
         r = HTTP_request(URL_dl)
         if "-----BEGIN CERTIFICATE-----" in r.text:
         	print("%s..." % r.text[:300])
         	write_file(path_write_cert, r.text)
         else:
         	print("[!] Invalid certificate")
+
+    # Perform query until "value" (in key) is found
+    def do_loop(self, URL, payload, key, value):
+        while True:
+            s_data = self.sign_data(URL, payload)
+            j_data = HTTP_load_JSON(URL, s_data)
+            v = try_and_load_JSON(j_data, key)
+            if v != None and v == value:
+                print("[+] Status is valid")
+                return j_data
+            print("[!] Status not valid, waiting for 2 seconds...")
+            sleep(2)
 
 # Base64 urslsafe encode
 #   args: value to be encoded (str)
