@@ -82,7 +82,7 @@ class LetsEncryptCORE():
         return j_order
 
     # Fourth step - Authorization
-    def api_authorization(self, j_order):
+    def api_authorization(self, j_order, method="dns"):
         print("[*] Step 4 - Performing authorizations")
         auths = try_and_load_JSON(j_order, "authorizations")
         for URL_auth in auths:
@@ -92,7 +92,6 @@ class LetsEncryptCORE():
             if j_identifier:
                 v_domain = try_and_load_JSON(j_identifier, "value")
                 print("[*] Verifying domain: %s..." % (v_domain))
-                method = "dns"
                 if method == "http":
                     exiting("[!] Unfortunately the HTTP method is not yet supported", 1)
                 elif method == "dns":
@@ -122,7 +121,7 @@ class LetsEncryptCORE():
             if self.my_ovh.check_record_deployment(domain_name, "_acme-challenge", dns_TXT_value,
                 info["nameServers"] if "nameServers" in info else {}):
                 break
-            elif inc == MAX_CHECK_DEPLOYMENT:
+            elif inc == MAX_LOOP:
                 self.my_ovh.api_delete_TXT_record(domain_name, new_record)
                 exiting("[!] Record (challenge) was not deployed on time", 1)
             else:
@@ -163,6 +162,7 @@ class LetsEncryptCORE():
 
     # Perform query until "value" (in key) is found
     def do_loop(self, URL, payload, key, value):
+        inc = 0
         while True:
             s_data = self.sign_data(URL, payload)
             j_data = HTTP_load_JSON(URL, s_data)
@@ -170,6 +170,10 @@ class LetsEncryptCORE():
             if v != None and v == value:
                 print("[+] Status is valid")
                 return j_data
+            elif inc == MAX_LOOP:
+                exiting("[!] Reached maximum loop threshold while querying \"%s\"" % (URL), 1)
+
+            inc += 1
             print("[!] Status not valid, waiting for 2 seconds...")
             sleep(2)
 

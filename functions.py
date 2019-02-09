@@ -53,12 +53,17 @@ def HTTP_request(URL, data=None):
 #   return: JSON object
 def HTTP_load_JSON(URL, data=None):
     req_result = HTTP_request(URL, data)
-    return req_result.json()
+    try:
+        return req_result.json()
+    except:
+        return None
 
 # Fetch data from JSON collection
 #   args: json collection (str), value (str)
 #   return: value (str) or None
 def try_and_load_JSON(json, value, required=False):
+    if json == None:
+        return None
     if value in json:
         return json[value]
     else:

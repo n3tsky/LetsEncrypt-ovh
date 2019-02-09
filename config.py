@@ -9,6 +9,8 @@ HTTP_HEADERS = {
 	"Content-Type": "application/jose+json",
 }
 
+MAX_LOOP = 15
+
 ### Let'sEncrypt
 # Prod env.
 LE_API_ADDRESS = "https://acme-v02.api.letsencrypt.org/directory"

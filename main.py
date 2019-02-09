@@ -8,8 +8,10 @@ from config import *
 # Main work starts here
 def do(args):
     if not (args.dns or args.http): # Ensure user chose http/dns
-        print("[!] Please, provide at least one method, either --http or --dns")
-        sys.exit(1)
+        exiting("[!] Please, provide at least one method, either --http or --dns", 1)
+
+    if (args.http):
+        exiting("[!] HTTP method not yet supported", 1)
 
     print()
     API_BASE_ADDRESS = LE_API_ADDRESS
