@@ -47,6 +47,33 @@ class OVHQuerier:
 		except ovh.exceptions.InvalidCredential as e:
 			exiting("[!] Error: Invalid credential: %s" % (e), 1)
 
+	# Create a new DNS record (subdomain.domain) with the appropriate record value
+	def api_create_TXT_record(self, domain_name, subdomain, value):
+		print("[*] Add TXT domain record")
+		data = {"fieldType": "TXT", "subDomain": subdomain, "target": value, "ttl": 1}
+		new_record = self.api_query(API_ZONE_RECORDS % domain_name, "post", data)
+		new_record_id = try_and_load_JSON(new_record, "id")
+		print("[*] New DNS record: %d" % (new_record_id))
+		self.api_refresh_zone(domain_name)
+		return new_record_id
+
+	# Delete a DNS record, by record ID
+	def api_delete_TXT_record(self, domain_name, record_id):
+		if record_id > 0:
+			print("[*] Delete record ID: %d" % (record_id))
+			record_to_be_deleted = list()
+			record_to_be_deleted.append(self.api_fetch_domain_records_by_id(domain_name, record_id))
+			self.display_records(record_to_be_deleted)
+			self.api_query(API_ZONE_RECORDS_ID % (domain_name, record_id), "delete")
+			self.api_refresh_zone(domain_name)
+			print("[*] Record deleted!")
+
+	# Refresh DNS zone
+	def api_refresh_zone(self, domain_name):
+		print("[*] Refreshing DNS zone")
+		self.api_query(API_ZONE_REFRESH % domain_name, "post")
+		soa = self.api_query(API_ZONE_SOA % domain_name)
+
 	# Fetch basic info about a domain
 	def api_domain_info(self, domain_name):
 		info = self.api_query(API_ZONE_INFO % (domain_name))
@@ -54,8 +81,8 @@ class OVHQuerier:
 		return info
 
 	# Fetch information about a record (through a record ID)
-	def api_fetch_domain_records_by_id(self, domain, record_id):
-		record_info = self.api_query(API_ZONE_RECORDS_ID % (domain, record_id))
+	def api_fetch_domain_records_by_id(self, domain_name, record_id):
+		record_info = self.api_query(API_ZONE_RECORDS_ID % (domain_name, record_id))
 		d = list()
 		for element in ["id", "zone", "target", "fieldType", "ttl", "subDomain"]:
 			d.append(try_and_load_JSON(record_info, element))
@@ -73,14 +100,18 @@ class OVHQuerier:
 			data.append(d)
 		return data
 
+	# Display info through tabulate
+	def display_records(self, data):
+		headers = ["Record ID", "Zone", "Target", "Field type", "TTL", "SubDomains"]
+		print(tabulate(data, headers=headers, tablefmt="grid"))
+
 	# Display information about all records gathered for a specific domain
-	def display_domain_records(self, domain):
+	def display_all_domain_records(self, domain):
 		records = self.api_fetch_domain_records(domain)
 		data = self.iterate_over_domain_records(domain, records)
-		headers = ["Record ID", "Zone", "Target", "Field type", "TTL", "SubDomains"]
 		if self.verbose:
 			print("[*] Domain's records - %d record(s)" % (len(records)))
-			print(tabulate(data, headers=headers, tablefmt="grid"))
+			self.display_records(data)
 
 if __name__ == "__main__":
 	if len(sys.argv) != 2:
@@ -89,4 +120,7 @@ if __name__ == "__main__":
 
 	my_ovh = OVHQuerier(True) # True => verbosity
 	my_ovh.api_domain_info(sys.argv[1])
-	my_ovh.display_domain_records(sys.argv[1])
+	my_ovh.display_all_domain_records(sys.argv[1])
+	record_id = my_ovh.api_create_TXT_record(sys.argv[1], "_testing-value", "TESTING VALUE")
+	my_ovh.display_all_domain_records(sys.argv[1])
+	my_ovh.api_delete_TXT_record(sys.argv[1], record_id)
