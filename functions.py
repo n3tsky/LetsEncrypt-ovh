@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 import requests
 from config import *
 
@@ -62,3 +63,18 @@ def try_and_load_JSON(json, value, required=False):
         return json[value]
     else:
         return None
+
+# Determine whether a path (directory and file) is writeable
+#   args: path (str) and name (str)
+#   return: True if writeable, False otherwise
+def check_path_and_name(directory, name):
+    full_path = "%s/%s" % (directory, name)
+    if os.path.exists(directory): # Does path exists?
+        if os.path.isfile(full_path): # File exists
+            if os.access(full_path, os.W_OK):
+                print("[!] Beware - file \"%s\" will be overwritten" % (full_path))
+                return True
+        else: # File doesn't exist
+            if os.access(directory, os.W_OK):
+                return True
+    exiting("[!] Please ensure to provide a valid (existing and writeable) path and name for your certificate", 1)
