@@ -5,6 +5,7 @@ Python script used to generate Let'sEncrypt certificate (without CERTBOT) throug
 ### Features
 * Python3 (full pythonic instructions)
 * All-in-one script (no need to update DNS zones manually)
+* Let's Encrypt staging or production environment
 
 ### Installation
 * Install Python3 dependencies
