@@ -24,12 +24,12 @@ pip3 install --user -r requirements.txt
 
 ### Usage
 
-# Create a Let's Encrypt account private key
+#### Create a Let's Encrypt account private key
 ```
 openssl genrsa 4096 > account.key
 ```
 
-# Create a Certificate Signing Request (CSR) for your domain(s)
+#### Create a Certificate Signing Request (CSR) for your domain(s)
 ```
 # Generate a domain private key (if you haven't already)
 openssl genrsa 4096 > domain.key
@@ -37,14 +37,36 @@ openssl genrsa 4096 > domain.key
 openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
 ```
 
-# Run the script and get a signed certificate
+#### Run the script and get a signed certificate
 ```
   ./main.py --account-key account.key --csr domain.csr --cert-path /path/to/directory --cert-name le.cert --contact mailto:aaa@bbb.com --dns
 ```
 
-/!\ Make sure that the path to your directory is writeable
+#### Auto renew
 
-More information about usage:
+  * Step 1 - Create a dedicated (low-privileged) user
+```
+  root# useradd letsencrypt
+```
+  * Step 2 - Allow user to reload web server (e.g.: Apache)
+```
+  root# sudo visudo
+  # Add the following line
+  letsencrypt ALL=(ALL) NOPASSWD: /usr/sbin/apachectl graceful
+```
+  * Step 3 - As user define a cron job
+```
+  letsencrypt$ crontab -l
+  # Run once every 3 months (90 days)
+  0 0 1 */3 *  /home/letsencrypt/Documents/LetsEncrypt-ovh/main.py --account-key account.key --csr domain.csr --cert-path /path/to/directory --cert-name le.cert --contact mailto:aaa@bbb.com --dns && sudo apachectl graceful
+```
+
+* Make sure that the path to your directory is writeable
+* Backup your keys
+* Do not allow this script to be able to read your private keys
+* Do not run this script as "root" (there is no need for that)
+
+#### More information about usage:
 ```
 usage: main.py [-h] --account-key <account.key> --csr <domain.csr>
                [--cert-name <name>] --cert-path <path>
