@@ -42,7 +42,7 @@ openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
   ./main.py --account-key account.key --csr domain.csr --cert-path /path/to/directory --cert-name le.cert --contact mailto:aaa@bbb.com --dns
 ```
 
-### Add your certificate to your configuration
+#### Add your certificate to your configuration
 
 * Nginx
 ```
@@ -66,6 +66,27 @@ server {
 </VirtualHost>
 ```
 
+#### More information about usage:
+```
+usage: main.py [-h] --account-key <account.key> --csr <domain.csr>
+               [--cert-name <name>] --cert-path <path>
+               [--contact [contact [contact ...]]] [--dns] [--http]
+               [--staging] [-v]
+
+Let'sEncrypt certificate handler
+
+optional arguments:
+  -h, --help                          show this help message and exit
+  --account-key <account.key>         Let's Encrypt account private key
+  --csr <domain.csr>                  Certificate Signing Request
+  --cert-name <name>                  Name for Let's Encrypt certificate (default: "letsencrypt.cert")
+  --cert-path <path>                  Path where to write Let's Encrypt certificate (need to be writeable)
+  --contact [contact [contact ...]]   Contact details (e.g. mailto:aaa@bbb.com) for your account-key
+  --dns                               Validate challenge using DNS protocol
+  --http                              Validate challenge using HTTP protocol (not working atm)
+  --staging                           Use staging (testing) environment
+  -v, --verbose                       Verbose output
+```
 
 ### Auto renew
 
@@ -91,32 +112,9 @@ server {
 * Do not allow this script to be able to read your private keys
 * Do not run this script as "root" (there is no need for that)
 
-#### More information about usage:
-```
-usage: main.py [-h] --account-key <account.key> --csr <domain.csr>
-               [--cert-name <name>] --cert-path <path>
-               [--contact [contact [contact ...]]] [--dns] [--http]
-               [--staging] [-v]
-
-Let'sEncrypt certificate handler
-
-optional arguments:
-  -h, --help                          show this help message and exit
-  --account-key <account.key>         Let's Encrypt account private key
-  --csr <domain.csr>                  Certificate Signing Request
-  --cert-name <name>                  Name for Let's Encrypt certificate (default: "letsencrypt.cert")
-  --cert-path <path>                  Path where to write Let's Encrypt certificate (need to be writeable)
-  --contact [contact [contact ...]]   Contact details (e.g. mailto:aaa@bbb.com) for your account-key
-  --dns                               Validate challenge using DNS protocol
-  --http                              Validate challenge using HTTP protocol (not working atm)
-  --staging                           Use staging (testing) environment
-  -v, --verbose                       Verbose output
-```
-
 ### Thanks/Credits
 * https://github.com/diafygi/acme-tiny
 * https://github.com/rbeuque74/letsencrypt-ovh-hook
 
 ### ToDo
-* Handle contact information
 * Handle HTTP verification method

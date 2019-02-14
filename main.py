@@ -36,7 +36,7 @@ def do(args):
 
     leCORE = LetsEncryptCORE(API_BASE_ADDRESS, prv_key, der, jwk, domains, thumbprint, args.verbose)
     leCORE.api_init()
-    leCORE.api_create_account()
+    leCORE.api_create_account(args.contact)
     j_order = leCORE.api_create_order()
     leCORE.api_authorization(j_order)
     j_finalize = leCORE.api_finalizing(try_and_load_JSON(j_order, "finalize"))
@@ -50,7 +50,7 @@ def parser():
     parser.add_argument("--csr", required=True, metavar="<domain.csr>", help="Certificate Signing Request")
     parser.add_argument("--cert-name", default="letsencrypt.cert", metavar="<name>", help="Name for Let's Encrypt certificate (default: \"letsencrypt.cert\")")
     parser.add_argument("--cert-path", required=True, metavar="<path>", help="Path where to write Let's Encrypt certificate (need to be writeable)")
-    parser.add_argument("--contact", metavar="contact", default=None, nargs="*", help="Contact details (e.g. mailto:aaa@bbb.com) for your account-key")
+    parser.add_argument("--contact", default=None, metavar="contact", nargs="*", help="Contact details (e.g. mailto:aaa@bbb.com) for your account-key")
     parser.add_argument("--dns", default=False, action="store_true", help="Validate challenge using DNS protocol")
     parser.add_argument("--http", default=False, action="store_true", help="Validate challenge using HTTP protocol (not working atm)")
     parser.add_argument("--staging", default=False, action="store_true", help="Use staging (testing) environment")

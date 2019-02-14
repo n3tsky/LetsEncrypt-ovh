@@ -62,14 +62,20 @@ class LetsEncryptCORE():
         self.URL_newOrder = try_and_load_JSON(j_init, "newOrder")
 
     # Second step - Create account
-    def api_create_account(self):
+    def api_create_account(self, contact):
         print("[*] Step 2 - Create account")
         account_payload = {"termsOfServiceAgreed": True}
         s_data = self.sign_data(self.URL_newAccount, account_payload)
         j_account = HTTP_request(self.URL_newAccount, s_data.encode("utf-8"))
         print("[*] Account already registered!" if j_account.status_code == 201 else "[*] Registered!")
-        if "Location" in j_account.headers:
-        	self.kid = j_account.headers["Location"]
+        self.kid = try_and_load_JSON(j_account.headers, "Location")
+        # Contact info
+        if contact != None:
+            print("[*] Using the following contact information: %s" % (contact))
+            s_data = self.sign_data(self.kid, {"contact": contact})
+            j_contact = HTTP_request(self.kid, s_data.encode("utf-8"))
+            if j_contact != None and j_contact.status_code == 200:
+                print("[+] Contact details updated!")
 
     # Third step - Create order
     def api_create_order(self):
