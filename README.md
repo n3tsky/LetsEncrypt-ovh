@@ -17,11 +17,34 @@ pip3 install --user -r requirements.txt
     - GET /domain/zone/*
     - POST /domain/zone/*
     - DELETE /domain/zone/*
+
     you might restrict even further: /domain/zone/{yourdomain.com}/*
 
 * Set up your API keys in "config.py"
 
 ### Usage
+
+# Create a Let's Encrypt account private key
+```
+openssl genrsa 4096 > account.key
+```
+
+# Create a Certificate Signing Request (CSR) for your domain(s)
+```
+# Generate a domain private key (if you haven't already)
+openssl genrsa 4096 > domain.key
+# For a single domain
+openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
+```
+
+# Run the script and get a signed certificate
+```
+  ./main.py --account-key account.key --csr domain.csr --cert-path /path/to/directory --cert-name le.cert --contact mailto:aaa@bbb.com --dns
+```
+
+/!\ Make sure that the path to your directory is writeable
+
+More information about usage:
 ```
 usage: main.py [-h] --account-key <account.key> --csr <domain.csr>
                [--cert-name <name>] --cert-path <path>
