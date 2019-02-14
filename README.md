@@ -42,7 +42,32 @@ openssl req -new -sha256 -key domain.key -subj "/CN=yoursite.com" > domain.csr
   ./main.py --account-key account.key --csr domain.csr --cert-path /path/to/directory --cert-name le.cert --contact mailto:aaa@bbb.com --dns
 ```
 
-#### Auto renew
+### Add your certificate to your configuration
+
+* Nginx
+```
+server {
+    listen 443 ssl;
+    server_name yoursite.com, www.yoursite.com;
+
+    ssl_certificate /path/to/signed_chain.crt;
+    ssl_certificate_key /path/to/domain.key;
+    ...the rest of your config
+}
+```
+* Apache
+```
+<VirtualHost yoursite.com>
+    ...the rest of your config
+    SSLEngine on
+    SSLCertificateFile /path/to/signed_chain.crt
+    SSLCertificateKeyFile /path/to/domain.key
+    ...the rest of your config
+</VirtualHost>
+```
+
+
+### Auto renew
 
   * Step 1 - Create a dedicated (low-privileged) user
 ```
